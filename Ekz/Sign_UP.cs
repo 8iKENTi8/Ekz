@@ -24,6 +24,36 @@ namespace Ekz
             Application.Exit();
         }
 
+        private Boolean isUserExists()
+        {
+            DB dB = new DB();
+
+            DataTable table = new DataTable();
+
+            MySqlDataAdapter adapter = new MySqlDataAdapter();
+
+            MySqlCommand command =
+                new MySqlCommand("SELECT * FROM `users` WHERE `login` = @ul",
+                dB.getConnection());
+
+            command.Parameters.Add("@ul",
+                MySqlDbType.VarChar).Value = bunifuMaterialTextbox1.Text;
+            
+            adapter.SelectCommand = command;
+
+            adapter.Fill(table);
+
+            if (table.Rows.Count > 0)
+            {
+                MessageBox.Show("Такой логин уже есть, введите другой");
+                return true;
+            }
+            else
+                return false;
+           
+               
+        }
+
         private void bunifuCheckbox1_OnChange(object sender, EventArgs e)
         {
             if (bunifuCheckbox1.Checked == true)
@@ -32,29 +62,28 @@ namespace Ekz
                 button1.Enabled = false;
         }
 
-        public void RegUser(string log, string pass)
+        //Регистрация пользователя в бд
+        private void RegUser(string log, string pass, string email)
         {
             DB dB = new DB();
 
-            DataTable table = new DataTable();
-
-            MySqlDataAdapter adapter = new MySqlDataAdapter();
-
             MySqlCommand command = 
-                new MySqlCommand("SELECT * FROM `users` WHERE `login` = @ul AND" +
-                "`pass`= @up", dB.getConnection());
+                new MySqlCommand("INSERT INTO `users` (`id`, `login`, `pass`, `email`)" +
+                " VALUES (NULL, @ul, @up, @em);", 
+                dB.getConnection());
 
             command.Parameters.Add("@ul",MySqlDbType.VarChar).Value= log;
             command.Parameters.Add("@up", MySqlDbType.VarChar).Value = pass;
+            command.Parameters.Add("@em", MySqlDbType.VarChar).Value = email;
 
-            adapter.SelectCommand = command;
+            dB.openConnection();
 
-            adapter.Fill(table);
-
-            if (table.Rows.Count > 0)
-                MessageBox.Show("Yes");
+            if (command.ExecuteNonQuery() == 1)
+                MessageBox.Show("Аккаунт был создан!");
             else
-                MessageBox.Show("No");
+                MessageBox.Show("Аккаунт не был создан!");
+
+            dB.closeConnection();
 
         }
         private void button1_Click(object sender, EventArgs e)
@@ -88,7 +117,14 @@ namespace Ekz
                 return;
             }
 
-            RegUser(login,pass);
+            if (isUserExists())
+                return;
+
+            RegUser(login,pass,email);
+
+            this.Hide();
+            Sign_in sign = new Sign_in();
+            sign.Show();
 
         }
 
